@@ -56,6 +56,7 @@ Found a security problem? See [SECURITY.md](SECURITY.md).
 - **Sound:** Android captures the phone's sound as a whole, so it plays through one window (usually DeX). The other windows stay muted.
 - **Black window in a game or video app?** Some apps block screen capture. No capture tool can get around that.
 - **Mouse clicks act as single touches**, so games that need several fingers at once are hard to play.
+- **DeX's Recents button (|||) stays empty** on the default invisible screen: there, Samsung runs DeX without its window mode, so apps open full screen. For full DeX with app windows and Recents, choose *Settings › Advanced › DeX screen type › Simulated display*. It shows a small copy of DeX on the phone that you can pinch smaller.
 - Tested on a Galaxy S24 Ultra with One UI 8.5 / Android 16.
 - Troubleshooting: *Settings › Advanced › Show log*, or `%AppData%\MyDeX\mydex.log`.
 
