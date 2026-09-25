@@ -25,8 +25,8 @@ Tick a box (`[x]`) when a feature is done **and** tested. ✅ = verified on the 
 - [x] **7. Keep apps open when DeX stops.** ✅ 🧪
 - [x] **8. Ctrl+Alt+D** starts/stops DeX from anywhere. ✅ Tested by you.
 - [x] **9. Auto-reconnect.** ✅ Works after a simulated drop (`adb reconnect`): DeX is back 1 s after the phone is.
-  - [x] 0.3: waits 2 s after the phone reappears (a re-plugged phone isn't usable right away), and retries if the first restart fails.
-  - [ ] **Test by pulling the real USB cable.** It didn't come back in 0.2; `mydex.log` now shows what happens.
+  - [x] 0.3: waits 1 s after the phone reappears (checking every second while it waits) (a re-plugged phone isn't usable right away), and retries if the first restart fails.
+  - [x] ✅ **Tested by pulling the real USB cable** – DeX comes back by itself.
 - [x] **10. Fit my screen.** 🧪
 
 ## 🛠️ App polish

@@ -992,6 +992,8 @@ public sealed partial class MainForm : Form
         finally
         {
             refreshing = false;
+            // Check every second while waiting for the phone to come back, every 3 seconds otherwise.
+            pollTimer.Interval = reconnectSerial != null ? 1000 : 3000;
             UpdateButtons();
         }
     }
@@ -1015,14 +1017,14 @@ public sealed partial class MainForm : Form
             return false;
         }
 
-        // A re-plugged phone shows up in adb a moment before it is really usable; give it 2 seconds.
+        // A re-plugged phone shows up in adb a moment before it is really usable; give it a second.
         if (reconnectSeenSince == DateTime.MaxValue)
         {
             reconnectSeenSince = DateTime.Now;
             Log($"{device.Model} is back – restarting DeX in a moment.");
             return false;
         }
-        if (DateTime.Now - reconnectSeenSince < TimeSpan.FromSeconds(2))
+        if (DateTime.Now - reconnectSeenSince < TimeSpan.FromSeconds(1))
             return false;
 
         if (reconnectAttempts >= MaxReconnectAttempts)
@@ -1148,6 +1150,7 @@ public sealed partial class MainForm : Form
         {
             reconnectSerial = device.Serial;
             reconnectSeenSince = DateTime.MaxValue;
+            pollTimer.Interval = 1000;   // look for the phone every second until it is back
             Log($"Connection to {device.Model} lost (exit code {exitCode}) – waiting for it to come back.");
             SetStatus($"Lost the connection to {device.Model}. DeX comes back when it reconnects.");
             if (!Visible)
