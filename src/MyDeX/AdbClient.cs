@@ -112,6 +112,113 @@ public sealed partial class AdbClient(string adbPath)
         return result.Ok && value.Length > 0 && !value.Contains(' ') ? value : null;
     }
 
+    public sealed record DexLeftovers(int ExtraScreens, bool DexLauncherRunning, bool Overlay)
+    {
+        public bool IsClean => ExtraScreens == 0 && !DexLauncherRunning && !Overlay;
+        public override string ToString() =>
+            string.Join(", ", new[]
+            {
+                ExtraScreens > 0 ? $"{ExtraScreens} extra screen(s) still open" : null,
+                DexLauncherRunning ? "DeX launcher still running" : null,
+                Overlay ? "simulated display setting still set" : null,
+            }.Where(s => s != null));
+    }
+
+    /// <summary>
+    /// Looks for what a DeX session could leave behind: MyDeX/scrcpy or simulated ("Overlay") screens,
+    /// DeX's launcher still active on a screen (not just remembered in Recents), and the overlay setting.
+    /// </summary>
+    public static DexLeftovers CheckForDexLeftovers(string displayDump, string activitiesDump, string overlaySetting)
+    {
+        int screens = ExtraScreen().Matches(displayDump).Select(m => m.Groups[1].Value).Distinct().Count();
+        // Active tasks are listed per "Display #N"; the Recents section is not part of "dumpsys activity activities".
+        bool launcher = activitiesDump.Contains("com.honeyspace.dexservice.SecondaryLauncher", StringComparison.Ordinal);
+        string overlay = overlaySetting.Trim();
+        bool overlaySet = overlay.Length > 0 && overlay != "null";
+        return new DexLeftovers(screens, launcher, overlaySet);
+    }
+
+    /// <summary>
+    /// Apps used on the phone, newest first: the phone's open Recents, then everything else from its
+    /// usage statistics (which go back months). Stays on the PC – nothing is logged or sent anywhere.
+    /// </summary>
+    public async Task<List<string>> GetRecentlyUsedPackagesAsync(string serial, int max = 50)
+    {
+        var recents = await ShellAsync(serial, "dumpsys", "activity", "recents").ConfigureAwait(false);
+        // The full usage dump is several MB; filter it on the phone to the lines we need. The command is a
+        // fixed string (no input from anywhere), run by the phone's shell because of the pipe.
+        var usage = await ShellAsync(serial, "dumpsys usagestats | grep -E 'In-memory|package=.*lastTimeUsed'").ConfigureAwait(false);
+        return MergeRecentlyUsed(recents.Ok ? ParseRecents(recents.Output, max) : [],
+                                 usage.Ok ? ParseUsageStats(usage.Output) : [], max);
+    }
+
+    public static List<string> MergeRecentlyUsed(IEnumerable<string> recents, IEnumerable<string> usage, int max) =>
+        recents.Concat(usage).Distinct().Take(max).ToList();
+
+    /// <summary>
+    /// Reads <c>dumpsys activity recents</c>: one "* Recent #N: Task{... type=standard A=uid:package}" block
+    /// per task. Only normal app tasks count – not the home screen, DeX's launcher or the Recents screen.
+    /// The package comes from mActivityComponent= (One UI 8), realActivity= or the header's I=/A= part.
+    /// </summary>
+    public static List<string> ParseRecents(string output, int max = 50)
+    {
+        var packages = new List<string>();
+        string? fromHeader = null;
+        bool inAppTask = false, taken = false;
+
+        void Add(string package)
+        {
+            if (!packages.Contains(package)) packages.Add(package);
+            taken = true;
+        }
+        void FinishTask()
+        {
+            if (inAppTask && !taken && fromHeader != null) Add(fromHeader);
+        }
+
+        foreach (var raw in output.Split('\n'))
+        {
+            var line = raw.Trim();
+            var header = RecentHeader().Match(line);
+            if (header.Success)
+            {
+                FinishTask();
+                inAppTask = header.Groups[1].Value == "standard";
+                taken = false;
+                var intent = HeaderPackage().Match(line);
+                fromHeader = intent.Success ? intent.Groups[1].Value : null;
+                if (packages.Count >= max) break;
+                continue;
+            }
+            if (!inAppTask || taken) continue;
+            var activity = TaskComponent().Match(line);
+            if (activity.Success)
+                Add(activity.Groups[1].Value);
+        }
+        FinishTask();
+        return packages.Take(max).ToList();
+    }
+
+    /// <summary>
+    /// Reads the "package=… lastTimeUsed=\"yyyy-MM-dd HH:mm:ss\"" lines of <c>dumpsys usagestats</c>
+    /// (daily/weekly/monthly/yearly sections) and returns the packages, most recently used first.
+    /// Packages never used by hand (last used "1970-01-01") are left out.
+    /// </summary>
+    public static List<string> ParseUsageStats(string output)
+    {
+        var lastUsed = new Dictionary<string, DateTime>();
+        foreach (Match m in UsageLine().Matches(output))
+        {
+            if (!DateTime.TryParseExact(m.Groups[2].Value, "yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out var when) || when.Year < 2000)
+                continue;
+            string package = m.Groups[1].Value;
+            if (!lastUsed.TryGetValue(package, out var seen) || when > seen)
+                lastUsed[package] = when;
+        }
+        return lastUsed.OrderByDescending(kv => kv.Value).Select(kv => kv.Key).ToList();
+    }
+
     /// <summary>Switches a phone that is in Wi-Fi mode ("adb tcpip") back to USB-only, so it stops listening on the network.</summary>
     public Task<ProcessResult> UsbModeAsync(string serial) => RunAsync(["-s", serial, "usb"], 10_000);
 
@@ -146,4 +253,22 @@ public sealed partial class AdbClient(string adbPath)
 
     [GeneratedRegex(@"^\s*([A-Za-z ]+):\s*(-?\d+)\s*$", RegexOptions.Multiline)]
     private static partial Regex BatteryField();
+
+    // scrcpy's virtual screens are called "scrcpy"; Android's simulated displays "Overlay #1".
+    [GeneratedRegex(@"DisplayInfo\{""(?:scrcpy|Overlay #\d+)"", displayId (\d+)")]
+    private static partial Regex ExtraScreen();
+
+    [GeneratedRegex(@"^\* Recent #\d+: Task\{.*?\btype=(\w+)")]
+    private static partial Regex RecentHeader();
+
+    // "mActivityComponent=pkg/activity" (One UI 8), "realActivity={pkg/activity}" or "realActivity=pkg/activity".
+    [GeneratedRegex(@"^(?:mActivityComponent|realActivity)=\{?([A-Za-z][\w]*(?:\.[\w]+)+)/")]
+    private static partial Regex TaskComponent();
+
+    // In the task header: "I=pkg/activity" or "A=uid:pkg" (the task's affinity, usually its package).
+    [GeneratedRegex(@"\b(?:I=|A=\d+:)([A-Za-z][\w]*(?:\.[\w]+)+)")]
+    private static partial Regex HeaderPackage();
+
+    [GeneratedRegex(@"package=([A-Za-z][\w]*(?:\.[\w]+)+)\s+totalTimeUsed=""[^""]*""\s+lastTimeUsed=""([^""]+)""")]
+    private static partial Regex UsageLine();
 }

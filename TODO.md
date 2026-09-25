@@ -5,6 +5,9 @@ Tick a box (`[x]`) when a feature is done **and** tested. ✅ = verified on the 
 ## 🧭 Easy to use (0.3)
 - [x] **Home tab.** A status card says what's happening and what to do next, with one big Start/Stop button, *Mode* buttons (Gaming / Work / your own) and your apps as big buttons. ✅
 - [x] **Apps tab.** The app list loads by itself, has a search box (Enter opens the first match), *★ Add to Home*, and an *Open windows* list with Close / Close all. ✅ 🧪
+- [x] **🕘 Recently used on your phone** (0.4): Home button and tray menu with the apps you used last on the phone (open Recents + usage history, up to 50), newest first; they are also sorted to the top of the Apps tab. ✅ 40 apps shown on the S24 Ultra, menu opens in ~1 s. 🧪 Stays on the PC, never logged.
+- [x] **Phone check after DeX** (0.4): after every stop MyDeX checks the phone for leftovers (extra screens, DeX launcher, simulated-display setting), removes what it can and logs the result. ✅ "clean" after normal stops, dropped connections and cable pulls.
+  - [ ] Circle to Search stopped working once until a reboot (seen with 0.1/0.2). Not reproducible with 0.3+ – if it happens again, check the log for the phone-check line.
 - [x] **Show my phone screen too.** Your normal phone screen opens in its own window, next to DeX. ✅ 🧪
 - [x] **Drop files anywhere** on the MyDeX window to send them to the phone.
 - [x] **Settings** grouped into sections (Picture, Sound & game controller, Recording, Starting & stopping, Advanced). The log is behind *Show log* and is also saved in `%AppData%\MyDeX\mydex.log`.

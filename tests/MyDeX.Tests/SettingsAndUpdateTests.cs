@@ -166,5 +166,5 @@ public class UpdateTests
     }
 
     [Fact]
-    public void CurrentVersion_MatchesProject() => Assert.Equal(new Version(0, 3, 0), UpdateChecker.CurrentVersion);
+    public void CurrentVersion_MatchesProject() => Assert.Equal(new Version(0, 4, 0), UpdateChecker.CurrentVersion);
 }
