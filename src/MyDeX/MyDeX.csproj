@@ -15,6 +15,16 @@
     <Version>0.3.0</Version>
   </PropertyGroup>
 
+  <!-- Release builds must not contain anything about the machine they were built on (e.g. C:\Users\<name>\...
+       in debug paths): no debug symbols, deterministic output, and local paths mapped to /_/. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <PathMap>$(MSBuildProjectDirectory)=/_/</PathMap>
+  </PropertyGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="MyDeX.Tests" />
   </ItemGroup>

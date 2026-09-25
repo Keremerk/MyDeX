@@ -39,9 +39,15 @@ if ($iscc) {
     Write-Host 'Inno Setup 6 not found - skipped the installer (winget install JRSoftware.InnoSetup).'
 }
 
+# Portable download: the whole folder (MyDeX.exe needs the tools folder next to it).
+$zip = Join-Path $repoRoot "dist\MyDeX-$version-portable.zip"
+if (Test-Path $zip) { Remove-Item $zip -Force }
+Compress-Archive -Path "$out\*" -DestinationPath $zip
+Write-Host "Portable zip: $zip"
+
 # Checksums to publish next to the downloads, so users can check they got the genuine files.
 $sums = Join-Path $repoRoot 'dist\SHA256SUMS.txt'
-$files = @(Get-ChildItem (Join-Path $repoRoot 'dist') -Filter "MyDeX-Setup-$version.exe") + @(Get-Item "$out\MyDeX.exe")
+$files = @(Get-ChildItem (Join-Path $repoRoot 'dist') -Filter "MyDeX-Setup-$version.exe") + @(Get-Item $zip)
 $files | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name } | Set-Content $sums -Encoding ascii
 Write-Host "Checksums: $sums"
 Get-Content $sums
