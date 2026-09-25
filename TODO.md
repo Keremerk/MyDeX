@@ -31,15 +31,15 @@ Tick a box (`[x]`) when a feature is done **and** tested. ✅ = verified on the 
 
 ## 🛠️ App polish
 - [x] **11. Update check** for MyDeX and scrcpy, with a checksum-verified scrcpy update. 🧪
-  - [ ] Publish MyDeX releases on GitHub so the MyDeX part has something to find
+  - [x] v0.3.0 is published, so the anonymous update check finds it
 - [x] **12. Installer** (`scripts\Publish.ps1` → `dist\MyDeX-Setup-<version>.exe`). ✅ Install, upgrade and uninstall all tested.
 
 ## 🌍 Going public
 - [x] Test data cleaned: fake phone serial; battery sample without the battery serial, first-use date or charging times
 - [x] Fresh history: one clean commit signed with the GitHub no-reply address (the old history stays in a private archive repo)
 - [x] Safety pass for users: clipboard option, encrypted Wi-Fi recommended, quick Wi-Fi switched off on exit, Wi-Fi phones verified by hardware serial, masked log file, GitHub-only links, no PATH lookups, safer uninstall, checksums (`dist\SHA256SUMS.txt`)
-- [ ] Switch the repo to public on GitHub
-- [ ] Publish a release with the installer and `SHA256SUMS.txt`
+- [x] Repo is public, with private vulnerability reporting on
+- [x] v0.3.0 released with the installer, a portable zip and `SHA256SUMS.txt`. Release builds contain no build-machine paths (checked inside the installer too).
 
 ## 🐞 Known limitations / ideas
 - Mouse clicks act as single touches, so multi-touch games are hard to play. Keyboard-to-touch key mapping is not in scrcpy.
