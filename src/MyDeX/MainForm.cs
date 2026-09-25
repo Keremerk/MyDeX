@@ -49,7 +49,6 @@ public sealed partial class MainForm : Form
     readonly FlowLayoutPanel flowModes = new() { AutoSize = true, WrapContents = true, Margin = new Padding(0, 0, 0, 6) };
     readonly FlowLayoutPanel flowTiles = new() { AutoSize = true, WrapContents = true, MaximumSize = new Size(600, 0) };
     readonly Button btnPhoneScreen = new() { Text = "📱  Show my phone screen too", AutoSize = true, Padding = new Padding(8, 4, 8, 4) };
-    readonly Button btnPhoneRecents = new() { Text = "🕘  Recently used on your phone ▾", AutoSize = true, Padding = new Padding(8, 4, 8, 4) };
     readonly Label lblHomeTip = new() { AutoSize = true, MaximumSize = new Size(560, 0), ForeColor = SystemColors.GrayText };
 
     // Apps
@@ -212,7 +211,7 @@ public sealed partial class MainForm : Form
         layout.Controls.Add(Hint("Opens in its own window next to DeX. Add more on the Apps tab (★)."));
         layout.Controls.Add(flowTiles);
         layout.Controls.Add(Spacer(6));
-        layout.Controls.Add(Flow(btnPhoneRecents, btnPhoneScreen));
+        layout.Controls.Add(btnPhoneScreen);
         layout.Controls.Add(Spacer(10));
         layout.Controls.Add(phoneRow);
         layout.Controls.Add(lblHomeTip);
@@ -399,7 +398,6 @@ public sealed partial class MainForm : Form
         cmbDevices.SelectedIndexChanged += async (_, _) => { UpdateButtons(); await UpdateBatteryAsync(); };
         btnToggle.Click += async (_, _) => await ToggleDexAsync();
         btnPhoneScreen.Click += async (_, _) => await OpenAppAsync(AppWindow.PhoneScreen);
-        btnPhoneRecents.Click += async (_, _) => await ShowPhoneRecentsMenuAsync();
         tabs.SelectedIndexChanged += async (_, _) =>
         {
             if (tabs.SelectedTab == tabApps && SelectedReadyDevice() is { } phone && (phoneApps.Count == 0 || appsSerial != phone.Serial))
@@ -530,7 +528,6 @@ public sealed partial class MainForm : Form
         btnToggle.ForeColor = Color.White;
         btnToggle.Enabled = starting || running || reconnectSerial != null || (device != null && scrcpyExe != null);
         btnPhoneScreen.Enabled = device != null && scrcpyExe != null;
-        btnPhoneRecents.Enabled = device != null && scrcpyExe != null && !recentsBusy;
 
         lblHomeTip.Text = "Tip: drop files anywhere on this window to send them to your phone (Download › MyDeX). " +
                           $"{GlobalHotkey.Description} starts and stops DeX from anywhere.";
@@ -791,10 +788,6 @@ public sealed partial class MainForm : Form
         pollTimer.Start();
         batteryTimer.Start();
         await UpdateBatteryAsync();
-        // Load the app list and the phone's recently used apps in the background, so the Apps tab and
-        // "Recently used on your phone" open instantly later.
-        if (SelectedReadyDevice() != null)
-            await RefreshPhoneRecentsAsync();
 
         if (settings.CheckForUpdates && DateTime.Now - settings.LastUpdateCheck > TimeSpan.FromDays(1))
             await CheckForUpdatesAsync(quiet: true);

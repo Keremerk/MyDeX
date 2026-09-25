@@ -13,7 +13,7 @@ DeX runs on its **own screen**, not as a mirror of your phone. You can work or p
 ## What you can do
 - **Start/stop DeX in one click**, or with **Ctrl+Alt+D** from anywhere.
 - **Modes:** switch between *Gaming* (smooth, 120 FPS) and *Work* (sharper, 1440p), or save your own.
-- **Apps and games in their own windows**, next to DeX. Pin your favourites to the Home tab, or pick from **🕘 Recently used on your phone** (your last 50 apps).
+- **Apps and games in their own windows**, next to DeX. Pin your favourites to the Home tab.
 - **Your normal phone screen** in a window too.
 - **Game controller:** an Xbox or PlayStation controller on the PC works as a real gamepad on the phone. **Mouse lock** for shooters.
 - **Wireless:** switch to Wi-Fi in one click, or pair with no cable at all (Android 11+).

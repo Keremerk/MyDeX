@@ -41,72 +41,6 @@ public sealed partial class MainForm
         settings.Save();
     }
 
-    /// <summary>The apps most recently used on the phone itself (from its Recents), newest first.</summary>
-    List<PhoneApp> phoneRecents = [];
-    bool recentsBusy;
-
-    // ───────────────────────── Recently used on the phone ─────────────────────────
-
-    /// <summary>Reads the phone's Recents and turns package names into app names (from the app list).</summary>
-    async Task RefreshPhoneRecentsAsync()
-    {
-        var device = SelectedReadyDevice();
-        if (adb == null || scrcpyExe == null || device == null || recentsBusy) return;
-        recentsBusy = true;
-        try
-        {
-            var packages = await adb.GetRecentlyUsedPackagesAsync(device.Serial);
-            if (phoneApps.Count == 0 || appsSerial != device.Serial)
-                await LoadAppsAsync();   // needed for the names, and to skip things that can't be opened
-            var byPackage = phoneApps.ToDictionary(a => a.Package);
-            phoneRecents = packages.Where(byPackage.ContainsKey).Select(p => byPackage[p]).ToList();
-        }
-        catch (Exception ex)
-        {
-            Log("Couldn't read the phone's recent apps: " + ex.Message);
-        }
-        finally
-        {
-            recentsBusy = false;
-        }
-    }
-
-    async Task ShowPhoneRecentsMenuAsync()
-    {
-        // The list is kept fresh in the background (every 30 s), so show it right away; only the very first
-        // time (nothing loaded yet) wait for it.
-        if (phoneRecents.Count == 0)
-        {
-            btnPhoneRecents.Enabled = false;
-            try
-            {
-                for (int i = 0; recentsBusy && i < 150; i++)   // a background refresh is already running
-                    await Task.Delay(100);
-                await RefreshPhoneRecentsAsync();
-            }
-            finally
-            {
-                btnPhoneRecents.Enabled = true;
-            }
-        }
-        else
-        {
-            _ = RefreshPhoneRecentsAsync();   // fresher list for next time
-        }
-
-        var menu = new ContextMenuStrip();
-        if (phoneRecents.Count == 0)
-            menu.Items.Add(new ToolStripMenuItem("(no recently used apps found)") { Enabled = false });
-        foreach (var app in phoneRecents)
-        {
-            var item = new ToolStripMenuItem(app.Name) { ToolTipText = $"Open {app.Name} in its own window" };
-            item.Click += async (_, _) => await OpenAppAsync(app);
-            menu.Items.Add(item);
-        }
-        menu.Closed += (_, _) => BeginInvoke(menu.Dispose);
-        menu.Show(btnPhoneRecents, new Point(0, btnPhoneRecents.Height));
-    }
-
     // ───────────────────────── Phone check after DeX ─────────────────────────
 
     /// <summary>
@@ -194,19 +128,8 @@ public sealed partial class MainForm
         }
 
         miRecentApps.DropDownItems.Clear();
-        if (phoneRecents.Count > 0)
-        {
-            miRecentApps.DropDownItems.Add(new ToolStripMenuItem("Recently used on your phone") { Enabled = false });
-            foreach (var app in phoneRecents.Take(10))
-            {
-                var item = new ToolStripMenuItem("🕘 " + app.Name);
-                item.Click += async (_, _) => await OpenAppAsync(app);
-                miRecentApps.DropDownItems.Add(item);
-            }
-            miRecentApps.DropDownItems.Add(new ToolStripSeparator());
-        }
         var apps = settings.PinnedApps.Concat(settings.RecentApps).DistinctBy(a => a.Package).Take(10).ToList();
-        if (apps.Count == 0 && phoneRecents.Count == 0)
+        if (apps.Count == 0)
         {
             miRecentApps.DropDownItems.Add(new ToolStripMenuItem("(pick apps on the Apps tab first)") { Enabled = false });
         }
@@ -299,9 +222,6 @@ public sealed partial class MainForm
             UpdateTrayText();
             UpdateHome();
         }
-        // Keep the tray's "Recently used on your phone" list fresh (the Home button always reads it anew).
-        if (phoneApps.Count > 0)
-            await RefreshPhoneRecentsAsync();
     }
 
     // ───────────────────────── Wi-Fi ─────────────────────────
@@ -474,16 +394,14 @@ public sealed partial class MainForm
         string? selected = (lvApps.SelectedItems.Count > 0 ? lvApps.SelectedItems[0].Tag as PhoneApp : null)?.Package;
         lvApps.BeginUpdate();
         lvApps.Items.Clear();
-        // Pinned apps first, then the ones used most recently on the phone, then alphabetical.
-        var recentRank = phoneRecents.Select((a, i) => (a.Package, i)).ToDictionary(x => x.Package, x => x.i);
-        foreach (var app in phoneApps.OrderByDescending(settings.IsPinned).ThenBy(a => recentRank.GetValueOrDefault(a.Package, int.MaxValue)))
+        // Pinned apps first, then alphabetical.
+        foreach (var app in phoneApps.OrderByDescending(settings.IsPinned))
         {
             if (query.Length > 0
                 && !app.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase)
                 && !app.Package.Contains(query, StringComparison.OrdinalIgnoreCase))
                 continue;
-            string mark = settings.IsPinned(app) ? "★  " : recentRank.ContainsKey(app.Package) ? "🕘  " : "     ";
-            var item = new ListViewItem(mark + app.Name) { Tag = app, ToolTipText = app.Package };
+            var item = new ListViewItem((settings.IsPinned(app) ? "★  " : "     ") + app.Name) { Tag = app, ToolTipText = app.Package };
             lvApps.Items.Add(item);
             if (app.Package == selected)
                 item.Selected = true;
