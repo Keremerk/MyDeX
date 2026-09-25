@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <!-- LibraryImport (global hotkey) generates marshalling code that needs this -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>MyDeX</AssemblyName>
+    <RootNamespace>MyDeX</RootNamespace>
+    <Product>MyDeX</Product>
+    <Version>0.3.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="MyDeX.Tests" />
+  </ItemGroup>
+
+  <!-- scrcpy + adb live in <repo>/tools/scrcpy (run scripts/Get-Scrcpy.ps1) and ship next to MyDeX.exe.
+       ExcludeFromSingleFile: they are started as separate programs, so they must stay real files
+       instead of being packed inside MyDeX.exe. -->
+  <ItemGroup>
+    <None Include="..\..\tools\scrcpy\**\*" Link="tools\scrcpy\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+</Project>

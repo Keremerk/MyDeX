@@ -1,0 +1,34 @@
+Current Battery Service state:
+  AC powered: false
+  USB powered: true
+  Wireless powered: false
+  Dock powered: false
+  Max charging current: 0
+ Time when the latest updated value of the Max charging current was sent via battery changed broadcast: 0
+  Max charging voltage: 0
+  Charge counter: 2942452
+  status: 2
+  health: 2
+  present: true
+  level: 59
+  scale: 100
+  voltage: 3999
+ Time when the latest updated value of the voltage was sent via battery changed broadcast: 0
+ The last voltage value sent via the battery changed broadcast: 4000
+  temperature: 377
+  technology: Li-ion
+  Charging state: 0
+  Charging policy: 0
+  Capacity level: -1
+  batteryMiscEvent: 196608
+  batteryCurrentEvent: 0
+  mSecPlugTypeSummary: 2
+  LED Charging: true
+  LED Low Battery: true
+  current now: 916
+  charge counter: 2942452
+  Adaptive Fast Charging Settings: true
+  Super Fast Charging Settings: false
+FEATURE_WIRELESS_FAST_CHARGER_CONTROL: true
+  mWasUsedWirelessFastChargerPreviously: true
+  mWirelessFastChargingSettingsEnable: true
